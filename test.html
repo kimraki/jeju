@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>꽃게당 인스타그램 TV - 192x112px</title>
+  <style>
+    body, html { 
+      margin: 0; 
+      padding: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      background-color: #000; 
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    #viewer {
+      width: 192px !important;
+      height: 112px !important;
+      border: none;
+      display: block;
+      opacity: 1;
+      transition: opacity 0.9s ease-in-out;
+      background-color: #000;
+    }
+    #viewer.fadeout {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="viewer" src=""></iframe>
+
+<script>
+  // 설정값
+  const pages = ["board1.html", "board2.html", "board3.html", "video.html", "promo.html"];
+  const intervals = [30000, 30000, 10000, 50000, 40000];
+  const PRELOAD_RANGE = 2;
+
+  let current = 0;
+  let timeoutId = null;
+  const viewer = document.getElementById("viewer");
+  const preloaded = new Set();
+
+  // 1. 프리로드 함수
+  function preloadNextPages(startIdx) {
+    for (let i = 1; i <= PRELOAD_RANGE; i++) {
+      let idx = (startIdx + i) % pages.length;
+      let page = pages[idx];
+      if (!preloaded.has(page)) {
+        let link = document.createElement('link');
+        link.rel = 'preload';
+        link.href = page;
+        link.as = 'document';
+        document.head.appendChild(link);
+        preloaded.add(page);
+      }
+    }
+  }
+
+  // 2. 다음 페이지 전환 시작 (Fade Out)
+  function startTransition() {
+    viewer.classList.add('fadeout');
+
+    setTimeout(() => {
+      current = (current + 1) % pages.length;
+      viewer.src = pages[current];
+      preloadNextPages(current);
+    }, 900);
+  }
+
+  // 3. 타이머 스케줄러
+  function scheduleNextMove() {
+    clearTimeout(timeoutId);
+    const delay = intervals[current] || 10000;
+    console.log(`Current: ${pages[current]}, Next in: ${delay/1000}s`);
+    timeoutId = setTimeout(startTransition, delay);
+  }
+
+  // 4. iframe 로드 완료 시 (Fade In)
+  viewer.onload = function() {
+    viewer.classList.remove('fadeout');
+    scheduleNextMove();
+  };
+
+  // 5. 탭 활성화/비활성화 처리
+  document.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+      clearTimeout(timeoutId);
+    } else {
+      scheduleNextMove();
+    }
+  });
+
+  // 6. 초기 실행
+  window.onload = function() {
+    current = 0;
+    viewer.src = pages[current];
+    preloadNextPages(0);
+  };
+</script>
+</body>
+</html>
